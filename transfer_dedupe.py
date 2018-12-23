@@ -24,7 +24,7 @@ def transfer_unique(conn, src_dev, src_root, dst_dev, dst_root):
         dst_dir = os.path.dirname(dst_fullpath)
         os.makedirs(dst_dir, exist_ok=True)
         shutil.copy2(src_fullpath, dst_fullpath)
-        cur.add_master_file(conn, data)
+        add_master_file(conn, data)
     conn.commit()
 
 if __name__ == '__main__':
