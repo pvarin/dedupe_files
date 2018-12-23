@@ -28,7 +28,7 @@ def get_mime_type(filename):
     try:
         # This should work most of the time.
         filetype, filesubtype = magic.from_file(filename, mime=True).split('/')
-    except:
+    except ValueError:
         # I found a wierd bug that didn't seem to affect the commandline example.
         cmd = ['file', '--mime-type', filename]
         process = subprocess.Popen(
