@@ -87,6 +87,7 @@ def get_device_id(conn, device_name):
     return cur.fetchone()[0]
 
 def get_unique_hashes(conn, source_device, dest_device):
+    dest_device_id = get_device_id(conn, dest_device)
     sql_get_unique_hashes = """
         SELECT
             files.hash as hash,
@@ -95,15 +96,13 @@ def get_unique_hashes(conn, source_device, dest_device):
         FROM files
         JOIN devices
             ON files.device_id=devices.id
-        WHERE devices.name='{source_device}'
+        WHERE devices.name=?
         AND files.hash IS NOT NULL
         AND NOT EXISTS (
             SELECT * FROM master_files
             WHERE master_files.hash=files.hash
-            AND master_files.device_id='{dest_device}'
+            AND master_files.device_id=?
         )
         GROUP BY hash
-    """.format(
-        source_device=source_device,
-        dest_device=dest_device)
-    return conn.execute(sql_get_unique_hashes)
+    """
+    return conn.execute(sql_get_unique_hashes, (source_device, dest_device_id))
