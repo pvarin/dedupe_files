@@ -53,24 +53,27 @@ def index_files(conn, rootdir, device_id, blacklist=None, hash_file=False):
         for file in files:
             data = {}
             fullpath = os.path.join(root, file)
-            filetype, filesubtype = get_mime_type(fullpath)
-            filesize = os.path.getsize(fullpath)
-            relpath = os.path.relpath(fullpath, rootdir)
-            print('type: {} subtype: {} size: {} relpath: {} fullpath: {}'.
-                  format(filetype, filesubtype, filesize, relpath, fullpath))
-            data = {
-                'type': filetype,
-                'subtype': filesubtype,
-                'size': filesize,
-                'relpath': relpath,
-                'device_id': device_id,
-            }
-            if hash_file:
-                data['hash'] = md5(fullpath)
-            add_file(conn, data)
-            i += 1
-            if (i % 1000 == 0):
-                conn.commit()
+            try:
+                filetype, filesubtype = get_mime_type(fullpath)
+                filesize = os.path.getsize(fullpath)
+                relpath = os.path.relpath(fullpath, rootdir)
+                print('type: {} subtype: {} size: {} relpath: {} fullpath: {}'.
+                      format(filetype, filesubtype, filesize, relpath, fullpath))
+                data = {
+                    'type': filetype,
+                    'subtype': filesubtype,
+                    'size': filesize,
+                    'relpath': relpath,
+                    'device_id': device_id,
+                }
+                if hash_file:
+                    data['hash'] = md5(fullpath)
+                add_file(conn, data)
+                i += 1
+                if (i % 1000 == 0):
+                    conn.commit()
+            except PermissionError:
+                continue
 
 
 if __name__ == '__main__':
