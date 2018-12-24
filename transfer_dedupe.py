@@ -7,7 +7,7 @@ from database import connect_to_database, get_unique_hashes, add_master_file, ge
 def transfer_unique(conn, src_dev, src_root, dst_dev, dst_root):
     dst_device_id = get_device_id(conn, dst_dev)
     cur = get_unique_hashes(conn, src_dev, dst_dev)
-    for c in cur:
+    for i,c in enumerate(cur):
         file_hash, file_id, relpath = c
         src_fullpath = os.path.join(src_root,relpath)
         dst_fullpath = os.path.join(dst_root,relpath)
@@ -23,8 +23,14 @@ def transfer_unique(conn, src_dev, src_root, dst_dev, dst_root):
         }
         dst_dir = os.path.dirname(dst_fullpath)
         os.makedirs(dst_dir, exist_ok=True)
-        shutil.copy2(src_fullpath, dst_fullpath)
-        add_master_file(conn, data)
+        try:
+            shutil.copy2(src_fullpath, dst_fullpath)
+            add_master_file(conn, data)
+        except FileNotFoundError:
+            continue
+        # Save every 100 writes
+        if i%100 == 0:
+            conn.commit()
     conn.commit()
 
 if __name__ == '__main__':
