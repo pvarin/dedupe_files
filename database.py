@@ -88,21 +88,44 @@ def get_device_id(conn, device_name):
 
 def get_unique_hashes(conn, source_device, dest_device):
     dest_device_id = get_device_id(conn, dest_device)
+    source_device_id = get_device_id(conn, source_device)
+##    sql_get_unique_hashes = """
+##        SELECT
+##            files.hash as hash,
+##            MIN(files.id) as file_id,
+##            files.relpath
+##        FROM files
+##        JOIN devices
+##            ON files.device_id=devices.id
+##        WHERE devices.name=?
+##        AND files.hash IS NOT NULL
+##        AND NOT EXISTS (
+##            SELECT * FROM master_files
+##            WHERE master_files.hash=files.hash
+##            AND master_files.device_id=?
+##        )
+##        GROUP BY hash
+##    """
+##    return conn.execute(sql_get_unique_hashes, (source_device, dest_device_id))
     sql_get_unique_hashes = """
-        SELECT
-            files.hash as hash,
-            MIN(files.id) as file_id,
-            files.relpath
-        FROM files
-        JOIN devices
-            ON files.device_id=devices.id
-        WHERE devices.name=?
-        AND files.hash IS NOT NULL
-        AND NOT EXISTS (
-            SELECT * FROM master_files
-            WHERE master_files.hash=files.hash
-            AND master_files.device_id=?
-        )
-        GROUP BY hash
-    """
-    return conn.execute(sql_get_unique_hashes, (source_device, dest_device_id))
+        select files.hash, files.id, files.relpath
+        from files
+        join(
+                select unique_files.id
+                from (
+                        select hash, min(id) as id
+                        from files
+                        where hash is not null
+                        and device_id = ?
+                        group by hash) unique_files
+                left outer join (
+                    select * from master_files
+                    where master_files.device_id = ?
+                ) master_files_filtered
+                on unique_files.hash = master_files_filtered.hash
+                where master_files_filtered.file_id is null
+        ) unique_file_ids
+        on files.id = unique_file_ids.id
+        order by files.size asc
+        """
+    return conn.execute(sql_get_unique_hashes, (source_device_id, dest_device_id))
